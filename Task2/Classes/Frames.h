@@ -4,7 +4,6 @@ using namespace System::Windows::Forms;
 using namespace System::Collections;
 using namespace System::Drawing;
 
-
 namespace Task2
 {
 	ref class Frame abstract : Form
