@@ -3,7 +3,7 @@
 using namespace System;
 
 
-namespace GSMStore
+namespace GCMStore
 {
 
 	ref class Bowl abstract
@@ -11,7 +11,7 @@ namespace GSMStore
 
 	public: virtual property int Capacity;
 	public: property int FreeSpace { int get() { if (content == nullptr) return 0; return Capacity - content->Quantity; }  private: void set(int value) { } }
-	public:	virtual property Type^ ContentType {	Type^ get() { return content->GetType(); }	protected: void set(Type^ value) { } }
+	public:	virtual property Type^ ContentType { Type^ get() { return content->GetType(); }	protected: void set(Type^ value) { } }
 
 	public: void PourWith(Oil^ oil)
 	{

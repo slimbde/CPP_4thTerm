@@ -2,7 +2,7 @@
 using namespace System;
 
 
-namespace GSMStore
+namespace GCMStore
 {
 
 	ref class Oil abstract
