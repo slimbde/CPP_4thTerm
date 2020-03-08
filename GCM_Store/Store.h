@@ -1,6 +1,7 @@
 #pragma once
 #include "Classes/Order.h"
 #include "Classes/StockDealer.h"
+#include "Classes/DesktopDrawer.h"
 
 namespace GCMStore
 {
@@ -11,12 +12,16 @@ namespace GCMStore
 	using namespace System;
 	using namespace System::Windows::Forms;
 
+	delegate array<String^>^ arrayVoidDelegate();
 
 
-	public ref class Store : public Form
+	ref class Store : Form
 	{
+		Order^ order;						// жетон (заказ)
 		Dictionary<Type^, Oil^>^ orderOils;	// словарь для хранения масел в заказе перед формированием заказа
+		Dictionary<int, Order^>^ tokens;	// словарь для хранения жетонов
 		Button^ blinkBtn;					// текущая подсвечиваемая кнопка
+
 		StockDealer^ dealer;				// распорядитель склада
 
 	public:
@@ -25,10 +30,10 @@ namespace GCMStore
 			InitializeComponent();
 
 			this->dealer = dealer;
-			this->dealer->onBuild += gcnew EventHandler(this, &Store::refreshScoreboard);
-			this->dealer->onOrderApplying += gcnew EventHandler(this, &Store::refreshScoreboard);
-			this->dealer->onStopProcessing += gcnew EventHandler(this, &Store::refreshScoreboard);
-			this->dealer->onReplentish += gcnew EventHandler(this, &Store::refreshScoreboard);
+			this->dealer->onOrderApplying += gcnew EventHandler(this, &Store::dealerUpdateStatus);
+			this->dealer->onStopProcessing += gcnew EventHandler(this, &Store::dealerHandlingUpdate);
+			this->dealer->onOrderRetrieving += gcnew EventHandler(this, &Store::dealerUpdateStatus);
+			this->dealer->onReplentish += gcnew EventHandler(this, &Store::dealerUpdateStatus);
 		}
 
 	protected:
@@ -42,6 +47,7 @@ namespace GCMStore
 
 #pragma region Windows Form Designer generated code
 
+	private: System::Windows::Forms::Button^ bAbout;
 	private: System::Windows::Forms::GroupBox^ gbTotal;
 	private: System::Windows::Forms::Timer^ tBlink;
 	private: System::Windows::Forms::NumericUpDown^ nTotal;
@@ -59,7 +65,6 @@ namespace GCMStore
 	private: System::Windows::Forms::Button^ bOrder;
 	private: System::Windows::Forms::Panel^ panel3;
 	private: System::Windows::Forms::Panel^ pOrder;
-	private: Order^ tbOrder;
 	private: System::Windows::Forms::GroupBox^ groupBox2;
 	private: System::Windows::Forms::TextBox^ textBox3;
 	private: System::Windows::Forms::TextBox^ textBox2;
@@ -76,7 +81,7 @@ namespace GCMStore
 	private: System::Windows::Forms::RichTextBox^ rWarehouse;
 	private: System::Windows::Forms::Panel^ panel8;
 	private: System::Windows::Forms::Label^ lMessage;
-	private: System::Windows::Forms::Button^ bSafeGet;
+	private: System::Windows::Forms::Button^ bRetrieve;
 	private: System::Windows::Forms::Timer^ tMessage;
 	private: System::Windows::Forms::ToolTip^ toolTip1;
 	private: System::Windows::Forms::Button^ bSupply;
@@ -105,11 +110,12 @@ namespace GCMStore
 			this->panel3 = (gcnew System::Windows::Forms::Panel());
 			this->pOrder = (gcnew System::Windows::Forms::Panel());
 			this->groupBox2 = (gcnew System::Windows::Forms::GroupBox());
-			this->nSafe = (gcnew System::Windows::Forms::NumericUpDown());
-			this->label2 = (gcnew System::Windows::Forms::Label());
+			this->bAbout = (gcnew System::Windows::Forms::Button());
 			this->panel7 = (gcnew System::Windows::Forms::Panel());
 			this->rWarehouse = (gcnew System::Windows::Forms::RichTextBox());
-			this->bSafeGet = (gcnew System::Windows::Forms::Button());
+			this->nSafe = (gcnew System::Windows::Forms::NumericUpDown());
+			this->label2 = (gcnew System::Windows::Forms::Label());
+			this->bRetrieve = (gcnew System::Windows::Forms::Button());
 			this->bSafe = (gcnew System::Windows::Forms::Button());
 			this->textBox3 = (gcnew System::Windows::Forms::TextBox());
 			this->textBox4 = (gcnew System::Windows::Forms::TextBox());
@@ -138,8 +144,8 @@ namespace GCMStore
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->nCastrol))->BeginInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pbCastrol))->BeginInit();
 			this->groupBox2->SuspendLayout();
-			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->nSafe))->BeginInit();
 			this->panel7->SuspendLayout();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->nSafe))->BeginInit();
 			this->panel8->SuspendLayout();
 			this->SuspendLayout();
 			// 
@@ -169,6 +175,7 @@ namespace GCMStore
 			this->bSupply->TabIndex = 11;
 			this->bSupply->Text = L"Пополнить склад";
 			this->bSupply->UseVisualStyleBackColor = true;
+			this->bSupply->Click += gcnew System::EventHandler(this, &Store::bSupply_Click);
 			// 
 			// gbTotal
 			// 
@@ -195,8 +202,8 @@ namespace GCMStore
 			// pbTotal
 			// 
 			this->pbTotal->BackColor = System::Drawing::Color::Transparent;
+			this->pbTotal->BackgroundImage = (cli::safe_cast<System::Drawing::Image^>(resources->GetObject(L"pbTotal.BackgroundImage")));
 			this->pbTotal->BackgroundImageLayout = System::Windows::Forms::ImageLayout::Stretch;
-			this->pbTotal->Image = (cli::safe_cast<System::Drawing::Image^>(resources->GetObject(L"pbTotal.Image")));
 			this->pbTotal->Location = System::Drawing::Point(6, 19);
 			this->pbTotal->Name = L"pbTotal";
 			this->pbTotal->Size = System::Drawing::Size(60, 80);
@@ -229,8 +236,8 @@ namespace GCMStore
 			// pbShell
 			// 
 			this->pbShell->BackColor = System::Drawing::Color::Transparent;
+			this->pbShell->BackgroundImage = (cli::safe_cast<System::Drawing::Image^>(resources->GetObject(L"pbShell.BackgroundImage")));
 			this->pbShell->BackgroundImageLayout = System::Windows::Forms::ImageLayout::Stretch;
-			this->pbShell->Image = (cli::safe_cast<System::Drawing::Image^>(resources->GetObject(L"pbShell.Image")));
 			this->pbShell->Location = System::Drawing::Point(6, 19);
 			this->pbShell->Name = L"pbShell";
 			this->pbShell->Size = System::Drawing::Size(60, 80);
@@ -263,8 +270,8 @@ namespace GCMStore
 			// pbMobil
 			// 
 			this->pbMobil->BackColor = System::Drawing::Color::Transparent;
+			this->pbMobil->BackgroundImage = (cli::safe_cast<System::Drawing::Image^>(resources->GetObject(L"pbMobil.BackgroundImage")));
 			this->pbMobil->BackgroundImageLayout = System::Windows::Forms::ImageLayout::Stretch;
-			this->pbMobil->Image = (cli::safe_cast<System::Drawing::Image^>(resources->GetObject(L"pbMobil.Image")));
 			this->pbMobil->Location = System::Drawing::Point(6, 19);
 			this->pbMobil->Name = L"pbMobil";
 			this->pbMobil->Size = System::Drawing::Size(60, 80);
@@ -288,7 +295,7 @@ namespace GCMStore
 			// 
 			this->nCastrol->Increment = System::Decimal(gcnew cli::array< System::Int32 >(4) { 100, 0, 0, 0 });
 			this->nCastrol->Location = System::Drawing::Point(6, 105);
-			this->nCastrol->Maximum = System::Decimal(gcnew cli::array< System::Int32 >(4) { 1000, 0, 0, 0 });
+			this->nCastrol->Maximum = System::Decimal(gcnew cli::array< System::Int32 >(4) { 4000, 0, 0, 0 });
 			this->nCastrol->Name = L"nCastrol";
 			this->nCastrol->Size = System::Drawing::Size(60, 20);
 			this->nCastrol->TabIndex = 1;
@@ -297,8 +304,8 @@ namespace GCMStore
 			// pbCastrol
 			// 
 			this->pbCastrol->BackColor = System::Drawing::Color::Transparent;
+			this->pbCastrol->BackgroundImage = (cli::safe_cast<System::Drawing::Image^>(resources->GetObject(L"pbCastrol.BackgroundImage")));
 			this->pbCastrol->BackgroundImageLayout = System::Windows::Forms::ImageLayout::Stretch;
-			this->pbCastrol->Image = (cli::safe_cast<System::Drawing::Image^>(resources->GetObject(L"pbCastrol.Image")));
 			this->pbCastrol->Location = System::Drawing::Point(6, 19);
 			this->pbCastrol->Name = L"pbCastrol";
 			this->pbCastrol->Size = System::Drawing::Size(60, 80);
@@ -338,10 +345,11 @@ namespace GCMStore
 			// 
 			// groupBox2
 			// 
+			this->groupBox2->Controls->Add(this->bAbout);
+			this->groupBox2->Controls->Add(this->panel7);
 			this->groupBox2->Controls->Add(this->nSafe);
 			this->groupBox2->Controls->Add(this->label2);
-			this->groupBox2->Controls->Add(this->panel7);
-			this->groupBox2->Controls->Add(this->bSafeGet);
+			this->groupBox2->Controls->Add(this->bRetrieve);
 			this->groupBox2->Controls->Add(this->bSafe);
 			this->groupBox2->Controls->Add(this->textBox3);
 			this->groupBox2->Controls->Add(this->textBox4);
@@ -358,22 +366,15 @@ namespace GCMStore
 			this->groupBox2->TabStop = false;
 			this->groupBox2->Text = L"СКЛАД";
 			// 
-			// nSafe
+			// bAbout
 			// 
-			this->nSafe->Location = System::Drawing::Point(299, 178);
-			this->nSafe->Name = L"nSafe";
-			this->nSafe->Size = System::Drawing::Size(67, 20);
-			this->nSafe->TabIndex = 1;
-			this->nSafe->Value = System::Decimal(gcnew cli::array< System::Int32 >(4) { 1, 0, 0, 0 });
-			// 
-			// label2
-			// 
-			this->label2->AutoSize = true;
-			this->label2->Location = System::Drawing::Point(296, 162);
-			this->label2->Name = L"label2";
-			this->label2->Size = System::Drawing::Size(51, 13);
-			this->label2->TabIndex = 9;
-			this->label2->Text = L"заказ №";
+			this->bAbout->Location = System::Drawing::Point(298, 279);
+			this->bAbout->Name = L"bAbout";
+			this->bAbout->Size = System::Drawing::Size(75, 25);
+			this->bAbout->TabIndex = 11;
+			this->bAbout->Text = L"about";
+			this->bAbout->UseVisualStyleBackColor = true;
+			this->bAbout->Click += gcnew System::EventHandler(this, &Store::bAbout_Click);
 			// 
 			// panel7
 			// 
@@ -399,18 +400,37 @@ namespace GCMStore
 			this->rWarehouse->TabIndex = 0;
 			this->rWarehouse->Text = L"";
 			// 
-			// bSafeGet
+			// nSafe
 			// 
-			this->bSafeGet->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((System::Windows::Forms::AnchorStyles::Bottom | System::Windows::Forms::AnchorStyles::Left));
-			this->bSafeGet->BackColor = System::Drawing::SystemColors::ControlLight;
-			this->bSafeGet->BackgroundImage = (cli::safe_cast<System::Drawing::Image^>(resources->GetObject(L"bSafeGet.BackgroundImage")));
-			this->bSafeGet->BackgroundImageLayout = System::Windows::Forms::ImageLayout::Stretch;
-			this->bSafeGet->Location = System::Drawing::Point(299, 204);
-			this->bSafeGet->Name = L"bSafeGet";
-			this->bSafeGet->Size = System::Drawing::Size(67, 41);
-			this->bSafeGet->TabIndex = 5;
-			this->toolTip1->SetToolTip(this->bSafeGet, L"Стрелка для возврата жетона");
-			this->bSafeGet->UseVisualStyleBackColor = false;
+			this->nSafe->Location = System::Drawing::Point(299, 178);
+			this->nSafe->Minimum = System::Decimal(gcnew cli::array< System::Int32 >(4) { 1, 0, 0, 0 });
+			this->nSafe->Name = L"nSafe";
+			this->nSafe->Size = System::Drawing::Size(67, 20);
+			this->nSafe->TabIndex = 1;
+			this->nSafe->Value = System::Decimal(gcnew cli::array< System::Int32 >(4) { 1, 0, 0, 0 });
+			// 
+			// label2
+			// 
+			this->label2->AutoSize = true;
+			this->label2->Location = System::Drawing::Point(296, 162);
+			this->label2->Name = L"label2";
+			this->label2->Size = System::Drawing::Size(51, 13);
+			this->label2->TabIndex = 9;
+			this->label2->Text = L"заказ №";
+			// 
+			// bRetrieve
+			// 
+			this->bRetrieve->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((System::Windows::Forms::AnchorStyles::Bottom | System::Windows::Forms::AnchorStyles::Left));
+			this->bRetrieve->BackColor = System::Drawing::SystemColors::ControlLight;
+			this->bRetrieve->BackgroundImage = (cli::safe_cast<System::Drawing::Image^>(resources->GetObject(L"bRetrieve.BackgroundImage")));
+			this->bRetrieve->BackgroundImageLayout = System::Windows::Forms::ImageLayout::Stretch;
+			this->bRetrieve->Location = System::Drawing::Point(299, 204);
+			this->bRetrieve->Name = L"bRetrieve";
+			this->bRetrieve->Size = System::Drawing::Size(67, 41);
+			this->bRetrieve->TabIndex = 5;
+			this->toolTip1->SetToolTip(this->bRetrieve, L"Стрелка для возврата жетона");
+			this->bRetrieve->UseVisualStyleBackColor = false;
+			this->bRetrieve->Click += gcnew System::EventHandler(this, &Store::bRetrieve_Click);
 			// 
 			// bSafe
 			// 
@@ -424,6 +444,7 @@ namespace GCMStore
 			this->bSafe->TabIndex = 5;
 			this->toolTip1->SetToolTip(this->bSafe, L"Стрелка для сохранения жетона");
 			this->bSafe->UseVisualStyleBackColor = false;
+			this->bSafe->Click += gcnew System::EventHandler(this, &Store::bSafe_Click);
 			// 
 			// textBox3
 			// 
@@ -470,6 +491,7 @@ namespace GCMStore
 			this->bGet->TabIndex = 5;
 			this->toolTip1->SetToolTip(this->bGet, L"Стрелка для получения заказа");
 			this->bGet->UseVisualStyleBackColor = false;
+			this->bGet->Click += gcnew System::EventHandler(this, &Store::bGet_Click);
 			// 
 			// bRegister
 			// 
@@ -574,8 +596,8 @@ namespace GCMStore
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pbCastrol))->EndInit();
 			this->groupBox2->ResumeLayout(false);
 			this->groupBox2->PerformLayout();
-			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->nSafe))->EndInit();
 			this->panel7->ResumeLayout(false);
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->nSafe))->EndInit();
 			this->panel8->ResumeLayout(false);
 			this->panel8->PerformLayout();
 			this->ResumeLayout(false);
@@ -615,46 +637,47 @@ namespace GCMStore
 	{
 		try
 		{
-			auto id = (int)result->AsyncState;
+			auto order = (Order^)result->AsyncState;
+			if (order->Id == 0)
+				auto id = dealer->ApplyOrder(order);
+
 			auto markOrder = gcnew Action<String^>(this, &Store::markOrderInvoke);
-			Invoke(markOrder, Convert::ToString(id));
+			Invoke(markOrder, Convert::ToString(order->Id));
 		}
 		catch (Exception^) { }
 
-		auto inv = gcnew voidVoidDelegate(this, &Store::pullOrderInvoke);
-
-		while (tbOrder->Top < 8)
+		auto pull = gcnew voidVoidDelegate(this, &Store::pullOrderInvoke);
+		while (order->Top < 8)
 		{
-			Invoke(inv);
+			Invoke(pull);
 			System::Threading::Thread::Sleep(30);
 		}
 	}
 	private: void markOrderInvoke(String^ num)
 	{
-		auto list = gcnew List<String^>(tbOrder->Lines);
-		list->Add("");
+		auto list = gcnew List<String^>(order->Lines);
 		list->Add(String::Concat("  id: ", num));
-		tbOrder->Lines = list->ToArray();
+		order->Lines = list->ToArray();
 	}
 	private: void pullOrderInvoke()
 	{
-		++tbOrder->Top;
+		++order->Top;
 	}
 
-// метод задвигания карточки с заказом	
+	// метод задвигания карточки с заказом	
 	private: void pushOrder()
 	{
-		auto inv = gcnew voidVoidDelegate(this, &Store::pushOrderInvoke);
+		auto push = gcnew voidVoidDelegate(this, &Store::pushOrderInvoke);
 
-		while (tbOrder->Top > -70)
+		while (order->Top > -70)
 		{
-			Invoke(inv);
+			Invoke(push);
 			System::Threading::Thread::Sleep(30);
 		}
 	}
 	private: void pushOrderInvoke()
 	{
-		--tbOrder->Top;
+		--order->Top;
 	}
 
 	private: void pDragEnter(Object^ sender, DragEventArgs^ e)
@@ -668,12 +691,28 @@ namespace GCMStore
 		tb->Parent = sdr;
 	}
 
+	// набор масел в заказ
 	private: void alterOrder(int value, Type^ oilType)
 	{
-		if (tbOrder == nullptr)
+		if (order == nullptr)
 		{
 			if (value > 0)
 			{
+				if (value % 100 > 0)
+				{
+					if (oilType->Equals(Castrol::typeid))
+						nCastrol->Value = 0;
+					else if (oilType->Equals(Mobil::typeid))
+						nMobil->Value = 0;
+					else if (oilType->Equals(Shell::typeid))
+						nShell->Value = 0;
+					else if (oilType->Equals(Total::typeid))
+						nTotal->Value = 0;
+
+					MessageBox::Show("Количество масла должно быть кратно 100");
+					return;
+				}
+
 				if (orderOils->ContainsKey(oilType))
 					orderOils[oilType]->Quantity = value;
 				else
@@ -694,6 +733,118 @@ namespace GCMStore
 		}
 	}
 
+	// сохранение-выдача жетонов
+	private: void saveTokenCallback(IAsyncResult^ result)
+	{
+		auto order = (Order^)result->AsyncState;
+		auto copy = gcnew Order(order);
+		tokens->Add(order->Id, copy);
+
+		auto newOrder = gcnew voidVoidDelegate(this, &Store::saveTokenInvoke);
+		Invoke(newOrder);
+
+		alterMessage("ТЕПЕРЬ ВЫ МОЖЕТЕ СДЕЛАТЬ ЕЩЕ ОДИН ЗАКАЗ НЕ ДОЖИДАЯСЬ ГОТОВНОСТИ ТЕКУЩЕГО");
+	}
+	private: void retrieveTokenCallback(IAsyncResult^ result)
+	{
+		bRegister->BackColor = Drawing::SystemColors::ControlLight;
+		blinkBtn = bGet;
+
+		auto alterMessage = gcnew Action<String^>(this, &Store::alterMessage);
+		alterMessage->BeginInvoke("ТЕПЕРЬ ВЫ МОЖЕТЕ ПОПРОБОВАТЬ ПОЛУЧИТЬ ЗАКАЗ ПО ЖЕТОНУ", nullptr, nullptr);
+	}
+	private: void getOrderCallback(IAsyncResult^ result)
+	{
+		MessageBox::Show(dealer->RetrievePackage(order->Id)->ToString(), "Магазин ГСМ");
+
+		auto discardToken = gcnew voidVoidDelegate(this, &Store::saveTokenInvoke);
+		Invoke(discardToken);
+	}
+	private: void saveTokenInvoke()
+	{
+		nCastrol->Value = 0;
+		nMobil->Value = 0;
+		nTotal->Value = 0;
+		nShell->Value = 0;
+		orderOils->Clear();
+
+		nCastrol->Enabled = true;
+		nMobil->Enabled = true;
+		nTotal->Enabled = true;
+		nShell->Enabled = true;
+
+		blinkBtn->BackColor = Drawing::SystemColors::ControlLight;
+		blinkBtn = bOrder;
+		order = nullptr;
+		bOrder_Click(this, EventArgs::Empty);
+	}
+
+	// методы отрисовки статуса склада
+	private: void dealerUpdateStatus(System::Object^ sender, System::EventArgs^ e)
+	{
+		auto refresh = gcnew voidVoidDelegate(this, &Store::refreshTableInvoke);
+		Invoke(refresh);
+	}
+	private: void dealerHandlingUpdate(System::Object^ sender, System::EventArgs^ e)
+	{
+		drawPercents();
+
+		auto refresh = gcnew voidVoidDelegate(this, &Store::refreshTableInvoke);
+		Invoke(refresh);
+	}
+	private: void refreshTableInvoke()
+	{
+		auto status = dealer->Status;
+		auto board = gcnew Generic::Queue<String^>(rWarehouse->Lines);
+
+		for each (auto line in status)
+		{
+			board->Enqueue(line);
+
+			if (board->Count > 9)
+				board->Dequeue();
+		}
+
+		rWarehouse->Lines = board->ToArray();
+	}
+
+	// отрисовка процентов
+	private: void drawPercents()
+	{
+		auto getTable = gcnew arrayVoidDelegate(this, &Store::getTable);
+		auto table = gcnew Generic::List<String^>((array<String^>^)Invoke(getTable));
+
+		table->Add("");
+		if (table->Count > 9)
+			table->RemoveAt(0);
+
+		for (int i = 0; i < 101; ++i)
+		{
+			table[table->Count - 1] = String::Concat("сборка заказов.. ", i, "%");
+
+			auto alterPercent = gcnew Action<array<String^>^>(this, &Store::percentTableInvoke);
+			Invoke(alterPercent, gcnew array<Object^>{table->ToArray()});
+
+			System::Threading::Thread::Sleep(50);
+		}
+
+		auto clearCount = gcnew voidVoidDelegate(this, &Store::clearPercentInvoke);
+		Invoke(clearCount);
+	}
+	private: array<String^>^ getTable()
+	{
+		return rWarehouse->Lines;
+	}
+	private: void percentTableInvoke(array<String^>^ brd)
+	{
+		rWarehouse->Lines = brd;
+	}
+	private: void clearPercentInvoke()
+	{
+		auto newArr = gcnew array<String^>(rWarehouse->Lines->Length - 1);
+		Array::Copy(rWarehouse->Lines, newArr, rWarehouse->Lines->Length - 1);
+		rWarehouse->Lines = newArr;
+	}
 
 	//-------------------------------------------- СОБЫТИЯ -----------------------------------------------------
 	private: System::Void Store_Load(System::Object^ sender, System::EventArgs^ e)
@@ -717,6 +868,9 @@ namespace GCMStore
 		pSafe->DragDrop += gcnew DragEventHandler(this, &Store::pDragDrop);
 
 		orderOils = gcnew Dictionary<Type^, Oil^>();
+		tokens = gcnew Dictionary<int, Order^>();
+
+		rWarehouse->Lines = dealer->Status->ToArray();
 	}
 	private: System::Void tMessage_Tick(System::Object^ sender, System::EventArgs^ e)
 	{
@@ -756,33 +910,33 @@ namespace GCMStore
 	{
 		if (orderOils->Count != 0)
 		{
-			if (tbOrder == nullptr)
+			if (order == nullptr)
 			{
-				this->tbOrder = gcnew Order();
-				this->tbOrder->BackColor = System::Drawing::SystemColors::Info;
-				this->tbOrder->BorderStyle = System::Windows::Forms::BorderStyle::FixedSingle;
-				this->tbOrder->Cursor = System::Windows::Forms::Cursors::Default;
-				this->tbOrder->Location = System::Drawing::Point(4, -70);
-				this->tbOrder->Multiline = true;
-				this->tbOrder->Name = L"tbOrder";
-				this->tbOrder->ReadOnly = true;
-				this->tbOrder->Size = System::Drawing::Size(55, 72);
-				this->tbOrder->TabIndex = 0;
-				this->tbOrder->Text = L" ЗАКАЗ";
-				this->tbOrder->MouseDown += gcnew System::Windows::Forms::MouseEventHandler(this, &Store::tbOrder_MouseDown);
-				this->pOrder->Controls->Add(this->tbOrder);
+				this->order = gcnew Order();
+				this->order->BackColor = System::Drawing::SystemColors::Info;
+				this->order->BorderStyle = System::Windows::Forms::BorderStyle::FixedSingle;
+				this->order->Cursor = System::Windows::Forms::Cursors::Default;
+				this->order->Location = System::Drawing::Point(4, -70);
+				this->order->Multiline = true;
+				this->order->Name = L"order";
+				this->order->ReadOnly = true;
+				this->order->Size = System::Drawing::Size(55, 72);
+				this->order->TabIndex = 0;
+				this->order->Lines = gcnew array<String^>(2) { " ЖЕТОН", " ..." };
+				this->order->MouseDown += gcnew System::Windows::Forms::MouseEventHandler(this, &Store::order_MouseDown);
+				this->pOrder->Controls->Add(this->order);
 
 				auto pullOrderOut = gcnew Action<IAsyncResult^>(this, &Store::pullOrder);
 				pullOrderOut->BeginInvoke(nullptr, nullptr, nullptr);
 
 				for each (auto oil in orderOils->Values)
-					tbOrder->Add(oil);
+					order->Add(oil);
 
 				orderOils->Clear();	// очищаем словарь масел в заказе после формирования заказа
 			}
 
 			auto alterMessage = gcnew Action<String^>(this, &Store::alterMessage);
-			alterMessage->BeginInvoke("ТЕПЕРЬ ПЕРЕТАЩИТЕ ЗАКАЗ НА ПОЛЕ РЕГИСТРАЦИИ И ЗАРЕГИСТРИРУЙТЕ ЗАКАЗ", nullptr, nullptr);
+			alterMessage->BeginInvoke("ТЕПЕРЬ ПЕРЕТАЩИТЕ ЖЕТОН НА ПОЛЕ РЕГИСТРАЦИИ И ЗАРЕГИСТРИРУЙТЕ ЗАКАЗ", nullptr, nullptr);
 
 			blinkBtn->BackColor = Drawing::SystemColors::ControlLight;
 			blinkBtn = bRegister;
@@ -794,56 +948,135 @@ namespace GCMStore
 		}
 		else
 		{
-			if (tbOrder == nullptr)
+			if (order == nullptr)
 			{
 				auto alterMessage = gcnew Action<String^>(this, &Store::alterMessage);
 				alterMessage->BeginInvoke("НАЧНИТЕ С ФОРМИРОВАНИЯ ЗАКАЗА", nullptr, nullptr);
 			}
 		}
 	}
-	private: System::Void tbOrder_MouseDown(System::Object^ sender, System::Windows::Forms::MouseEventArgs^ e)
+	private: System::Void order_MouseDown(System::Object^ sender, System::Windows::Forms::MouseEventArgs^ e)
 	{
-		auto source = (TextBox^)sender;
-		auto parent = source->Parent;
+		if (order->Top == 8)
+		{
+			auto source = (TextBox^)sender;
+			auto parent = source->Parent;
 
-		parent->DoDragDrop(source, DragDropEffects::Move);
+			parent->DoDragDrop(source, DragDropEffects::Move);
+		}
 	}
 	private: System::Void bRegister_Click(System::Object^ sender, System::EventArgs^ e)
 	{
-		if (tbOrder->Parent == pRegister && tbOrder->Id == 0)
+		if (order != nullptr)
 		{
-			auto regIn = gcnew voidVoidDelegate(this, &Store::pushOrder);
-			auto callBack = gcnew AsyncCallback(this, &Store::pullOrder);
-			regIn->BeginInvoke(callBack, dealer->ApplyOrder(tbOrder));
+			if (order->Parent == pRegister)
+			{
+				if (order->Id == 0)
+				{
+					auto regIn = gcnew voidVoidDelegate(this, &Store::pushOrder);
+					auto callBack = gcnew AsyncCallback(this, &Store::pullOrder);
+					regIn->BeginInvoke(callBack, order);
 
-			bRegister->BackColor = Drawing::SystemColors::ControlLight;
-			blinkBtn = bSafe;
+					bRegister->BackColor = Drawing::SystemColors::ControlLight;
+					blinkBtn = bSafe;
 
-			auto alterMessage = gcnew Action<String^>(this, &Store::alterMessage);
-			alterMessage->BeginInvoke("ТЕПЕРЬ ВЫ МОЖЕТЕ СОХРАНИТЬ ЖЕТОН И СДЕЛАТЬ ЕЩЕ ОДИН ЗАКАЗ ЛИБО ДОЖДАТЬСЯ ГОТОВНОСТИ И ПОЛУЧИТЬ ЗАКАЗ", nullptr, nullptr);
+					auto alterMessage = gcnew Action<String^>(this, &Store::alterMessage);
+					alterMessage->BeginInvoke("ТЕПЕРЬ ВЫ МОЖЕТЕ СОХРАНИТЬ ЖЕТОН И СДЕЛАТЬ ЕЩЕ ОДИН ЗАКАЗ ЛИБО ДОЖДАТЬСЯ ГОТОВНОСТИ И ПОЛУЧИТЬ ЗАКАЗ", nullptr, nullptr);
+				}
+				else
+					MessageBox::Show("Жетон уже зарегистрирован", "Магазин ГСМ");
+			}
+			else
+				MessageBox::Show("Для регистрации жетона положите его на поле", "Магазин ГСМ");
 		}
 	}
-
-
-	private: void refreshScoreboard(System::Object^ sender, System::EventArgs^ e)
+	private: System::Void bGet_Click(System::Object^ sender, System::EventArgs^ e)
 	{
-		auto refresh = gcnew voidVoidDelegate(this, &Store::refreshScoreboardInvoke);
-		Invoke(refresh);
-	}
-	private: void refreshScoreboardInvoke()
-	{
-		auto status = dealer->Status;
-		auto board = gcnew Generic::Queue<String^>(rWarehouse->Lines);
-
-		for each (auto line in status)
+		if (order != nullptr)
 		{
-			board->Enqueue(line);
+			if (order->Parent == pGet)
+			{
+				if (order->Id != 0)
+				{
+					auto pullToken = gcnew AsyncCallback(this, &Store::pullOrder);
+					if (dealer->CompleteOrder(order->Id))
+						pullToken = gcnew AsyncCallback(this, &Store::getOrderCallback);
 
-			if (board->Count > 9)
-				board->Dequeue();
+					auto handleToken = gcnew voidVoidDelegate(this, &Store::pushOrder);
+					handleToken->BeginInvoke(pullToken, nullptr);
+				}
+				else
+					MessageBox::Show("Зарегистрируйте жетон для сборки заказа", "Магазин ГСМ");
+			}
+			else
+				MessageBox::Show("Для получения заказа положите жетон на поле", "Магазин ГСМ");
 		}
+	}
+	private: System::Void bSafe_Click(System::Object^ sender, System::EventArgs^ e)
+	{
+		if (order != nullptr)
+		{
+			if (order->Parent == pSafe)
+			{
+				if (order->Id != 0)
+				{
+					auto push = gcnew voidVoidDelegate(this, &Store::pushOrder);
+					auto callback = gcnew AsyncCallback(this, &Store::saveTokenCallback);
+					push->BeginInvoke(callback, order);
+				}
+				else
+					MessageBox::Show("Перед сохранением жетона его необходимо зарегистрировать", "Магазин ГСМ");
+			}
+			else
+				MessageBox::Show("Для сохранения жетона положите его на поле", "Магазин ГСМ");
+		}
+	}
+	private: System::Void bRetrieve_Click(System::Object^ sender, System::EventArgs^ e)
+	{
+		if (order == nullptr)
+		{
+			auto id = Convert::ToInt32(nSafe->Value);
+			if (tokens->ContainsKey(id))
+			{
+				order = gcnew Order(tokens[id]);
+				tokens->Remove(id);
 
-		rWarehouse->Lines = board->ToArray();
+				nCastrol->Enabled = false;
+				nMobil->Enabled = false;
+				nTotal->Enabled = false;
+				nShell->Enabled = false;
+				nCastrol->Value = 0;
+				nMobil->Value = 0;
+				nTotal->Value = 0;
+				nShell->Value = 0;
+				orderOils->Clear();
+				orderOils->Clear();
+
+				order->Parent = pSafe;
+				order->MouseDown += gcnew MouseEventHandler(this, &Store::order_MouseDown);
+
+				auto pull = gcnew Action<IAsyncResult^>(this, &Store::pullOrder);
+				auto callback = gcnew AsyncCallback(this, &Store::retrieveTokenCallback);
+				pull->BeginInvoke(nullptr, callback, nullptr);
+			}
+			else
+				MessageBox::Show(String::Concat("Жетон с номером ", id, " не сохранялся"), "Магазин ГСМ");
+		}
+		else
+			MessageBox::Show("Для выдачи сохраненного жетона сохраните-используйте активный жетон", "Магазин ГСМ");
+	}
+	private: System::Void bSupply_Click(System::Object^ sender, System::EventArgs^ e)
+	{
+		dealer->ReplenishWith(20);
+
+		auto handle = gcnew voidVoidDelegate(dealer, &StockDealer::ProcessOrders);
+		handle->BeginInvoke(nullptr, nullptr);
+	}
+	private: System::Void bAbout_Click(System::Object^ sender, System::EventArgs^ e)
+	{
+		MessageBox::Show("Разработчик:\nГригорий Долгий\nЗЭУ-271\n2020", "Об авторе");
+		/*auto draw = gcnew voidVoidDelegate(DesktopDrawer::DrawFace);
+		draw->BeginInvoke(nullptr, nullptr);*/
 	}
 	};
 }

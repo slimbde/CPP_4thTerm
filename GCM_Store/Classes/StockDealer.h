@@ -1,7 +1,7 @@
 #pragma once
 #include "Order.h"
 #include "Package.h"
-#include "Bowl.h"
+#include "Barrel.h"
 #include "StockFactory.h"
 using namespace System;
 using namespace System::Collections::Generic;
@@ -21,23 +21,9 @@ namespace GCMStore
 		{
 			factory = stockFactory;
 
-			auto factoryStock = factory->Create();
-			stock = gcnew Generic::Queue<Bowl^>();
-
-			while (factoryStock->Count)
-				stock->Enqueue(factoryStock->Pop());
-
-			orders = gcnew Generic::Queue<Order^>();
-			packages = gcnew Dictionary<int, Package^>();
-			assembles = gcnew Dictionary<int, Package^>();
-			errors = gcnew Dictionary<int, String^>();
-
-			status = gcnew List<String^>();
-			status->Add("Содержимое склада:");
-			for each (auto item in stock)
-				status->Add(item->ToString());
-
-			onBuild(this, EventArgs::Empty);
+			auto init = gcnew voidVoidDelegate(this, &StockDealer::buildStock);
+			auto callback = gcnew AsyncCallback(this, &StockDealer::exposeContent);
+			init->BeginInvoke(callback, nullptr);
 		}
 		int ApplyOrder(Order^ order)
 		{
@@ -45,7 +31,11 @@ namespace GCMStore
 			orders->Enqueue(order);
 
 			status = gcnew Generic::List<String^>();
-			status->Add(String::Concat("Заказ зарегистрирован под номером: ", count));
+			status->Add(String::Concat(String::Concat(DateTime::Now.ToShortTimeString(), "\tзарегистрирован заказ id: ", count)));
+			for each (auto oil in order->Items)
+				status->Add(String::Concat(DateTime::Now.ToShortTimeString(), "\t", oil->ToString()));
+			status->Add("");
+
 			onOrderApplying(this, EventArgs::Empty);
 
 			auto doWork = gcnew voidVoidDelegate(this, &StockDealer::ProcessOrders);
@@ -56,6 +46,9 @@ namespace GCMStore
 		void ProcessOrders()
 		{
 			System::Threading::Thread::Sleep(5000);
+
+			// clear Status
+			status = gcnew Generic::List<String^>();
 
 			auto initialOrdersCount = orders->Count;	// (*)
 			for (int o = 0; o < initialOrdersCount; ++o)
@@ -75,30 +68,32 @@ namespace GCMStore
 				auto initialStockCount = stock->Count;	// (*)
 				for (int b = 0; b < initialStockCount; ++b)
 				{
-					auto stockBowl = stock->Dequeue();
-					auto bowlUsed = false;
+					auto stockBarrel = stock->Dequeue();
+					auto vatUsed = false;
 
 					for each (auto orderOil in order->Items)
 					{
 						if (orderOil->Quantity > 0)
 						{
-							if (stockBowl->ContentType == orderOil->GetType() && orderOil->Quantity >= stockBowl->Capacity)
+							if (stockBarrel->ContentType == orderOil->GetType() && orderOil->Quantity >= stockBarrel->Capacity)
 							{
-								package->Items->Push(stockBowl);			// (*)	when you withdraw a bowl, the stock bowls count decreases.
-								orderOil->Quantity -= stockBowl->Capacity;	//		decreasing affects stock count of FOR cycle
-								bowlUsed = true;
+								package->Items->Push(stockBarrel);			// (*)	when you withdraw a barrel, the stock vats count decreases.
+								orderOil->Quantity -= stockBarrel->Capacity;	//		decreasing affects stock count of FOR cycle
+								vatUsed = true;
 								break;
 							}
 						}
 					}
 
-					if (!bowlUsed)
-						stock->Enqueue(stockBowl); // put the bowl back
+					if (!vatUsed)
+						stock->Enqueue(stockBarrel); // put the barrel back
 				}
 
 				if (order->Complete)
 				{
 					packages->Add(package->Id, package);
+					status->Add(String::Concat(String::Concat(DateTime::Now.ToShortTimeString(), "\tзаказ id: ", package->Id, ": ", "готов к выдаче")));
+					status->Add("");
 
 					// clear error entries
 					if (errors->ContainsKey(package->Id))
@@ -112,7 +107,7 @@ namespace GCMStore
 					else
 						assembles[package->Id] = package;
 
-					auto message = String::Concat("Не удалось собрать:\t", order->GetRest());
+					auto message = String::Concat("не удалось собрать: ", order->GetRest());
 
 					// write error
 					if (!errors->ContainsKey(order->Id))
@@ -120,22 +115,14 @@ namespace GCMStore
 					else
 						errors[order->Id] = message;
 
+					status->Add(String::Concat(String::Concat(DateTime::Now.ToShortTimeString(), "\tзаказ ", order->Id, ": ", errors[order->Id])));
+					status->Add("необходимо пополнить склад");
+					status->Add("");
 					orders->Enqueue(order); // put the order back in line
 				}
 			}
 
-			//---------------------------------------------------------------- alter status ---------
-			status = gcnew Generic::List<String^>();
-			for each (auto package in packages)
-			{
-				String^ result = String::Concat("Заказ ", package.Key, ": ");
-
-				if (errors->ContainsKey(package.Key))
-					status->Add(String::Concat(result, errors[package.Key]));
-				else
-					status->Add(String::Concat(result, "готов к выдаче"));
-			}
-
+			exposeContent(nullptr);
 			onStopProcessing(this, EventArgs::Empty);
 		}
 		void ReplenishWith(int num)
@@ -147,23 +134,37 @@ namespace GCMStore
 
 			status = gcnew Generic::List<String^>();
 			status->Add(String::Concat("Склад пополнен бочками в количестве: ", num, " шт."));
+			status->Add("");
+			exposeContent(nullptr);
+
 			onReplentish(this, EventArgs::Empty);
+		}
+		bool CompleteOrder(int id)
+		{
+			return packages->ContainsKey(id);
 		}
 		Package^ RetrievePackage(int id)
 		{
 			if (packages->ContainsKey(id))
+			{
+				status = gcnew Generic::List<String^>();
+				status->Add(String::Concat(String::Concat(DateTime::Now.ToShortTimeString(), "\tвыдан заказ id: ", id)));
+				status->Add("");
+				onOrderRetrieving(this, EventArgs::Empty);
+
 				return packages[id];
+			}
 
 			return nullptr;
 		}
 
-		event EventHandler^ onBuild;
 		event EventHandler^ onOrderApplying;
 		event EventHandler^ onStopProcessing;
+		event EventHandler^ onOrderRetrieving;
 		event EventHandler^ onReplentish;
 
 	private:
-		Generic::Queue<Bowl^>^ stock;
+		Generic::Queue<Barrel^>^ stock;
 		Generic::Queue<Order^>^ orders;
 		Dictionary<int, Package^>^ packages;
 		Dictionary<int, Package^>^ assembles;
@@ -171,6 +172,40 @@ namespace GCMStore
 		StockFactory^ factory;
 		Generic::List<String^>^ status;
 		static int count = 0;
+
+		void buildStock()
+		{
+			auto factoryStock = factory->Create();
+			stock = gcnew Generic::Queue<Barrel^>();
+
+			while (factoryStock->Count)
+				stock->Enqueue(factoryStock->Pop());
+
+			orders = gcnew Generic::Queue<Order^>();
+			packages = gcnew Dictionary<int, Package^>();
+			assembles = gcnew Dictionary<int, Package^>();
+			errors = gcnew Dictionary<int, String^>();
+		}
+		void exposeContent(IAsyncResult^ result)
+		{
+			auto oils = gcnew Dictionary<Type^, Oil^>();
+
+			for each (auto barrel in stock)
+			{
+				if (!oils->ContainsKey(barrel->ContentType))
+					oils->Add(barrel->ContentType, (Oil^)Activator::CreateInstance(barrel->ContentType, gcnew array<Object^>{barrel->Capacity}));
+				else
+					oils[barrel->ContentType]->Quantity += barrel->Capacity;
+			}
+
+			if (status == nullptr)
+				status = gcnew List<String^>();
+
+			status->Add("остатки на складе:");
+			for each (auto oil in oils)
+				status->Add(String::Concat(DateTime::Now.ToShortTimeString(), "\t", oil.Value->ToString()));
+			status->Add("");
+		}
 	};
 
 }

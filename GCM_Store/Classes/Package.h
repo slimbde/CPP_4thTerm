@@ -1,5 +1,5 @@
 #pragma once
-#include "Bowl.h"
+#include "Barrel.h"
 using namespace System;
 using namespace System::Collections;
 using namespace System::Collections::Generic;
@@ -12,13 +12,13 @@ namespace GCMStore
 	{
 
 	public: property int Id {int get() { return id; } private: void set(int value) { } }
-	public: property Generic::Stack<Bowl^>^ Items;
+	public: property Generic::Stack<Barrel^>^ Items;
 
-	public: Package() { Items = gcnew Generic::Stack<Bowl^>(); }
+	public: Package() { Items = gcnew Generic::Stack<Barrel^>(); }
 	public: void SetId(int num) { id = num; }
 	public: String^ ToString() override
 	{
-		String^ result = String::Concat("\n---------------------------------------------\nЗаказ: ", id, "\n");
+		String^ result = String::Concat("Заказ: ", id, "\n");
 		for each (auto item in Items)
 			result += String::Concat(item, "\n");
 

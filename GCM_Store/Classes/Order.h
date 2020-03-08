@@ -13,6 +13,8 @@ namespace GCMStore
 
 	public: property int Id { int get() { return id; } private: void set(int value) { } }
 	public: property List<Oil^>^ Items;
+
+	// показывает собран заказ или нет
 	public: property bool Complete {
 		bool get()
 		{
@@ -25,6 +27,22 @@ namespace GCMStore
 	}
 
 	public: Order() { Items = gcnew List<Oil^>(); }
+	public: Order(Order^ other)
+	{
+		Items = other->Items;
+		id = other->id;
+		
+
+		BackColor = other->BackColor;
+		BorderStyle = other->BorderStyle;
+		Cursor = other->Cursor;
+		Location = other->Location;
+		Multiline = other->Multiline;
+		Name = other->Name;
+		ReadOnly = other->ReadOnly;
+		Size = other->Size;
+		Lines = other->Lines;
+	}
 	public: void SetId(int num) { id = num; }
 	public: void Add(Oil^ oil) { Items->Add(oil); }
 	public: String^ GetRest()

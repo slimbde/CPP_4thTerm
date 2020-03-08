@@ -15,21 +15,13 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Store.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="Store.h">
+    <ClInclude Include="Classes\Barrel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Classes\DesktopDrawer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Classes\Oil.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Classes\Bowl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Classes\StockDealer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Classes\Order.h">
@@ -38,11 +30,19 @@
     <ClInclude Include="Classes\Package.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Classes\StockDealer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="Classes\StockFactory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Classes\Draggable.h">
+    <ClInclude Include="Store.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Store.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

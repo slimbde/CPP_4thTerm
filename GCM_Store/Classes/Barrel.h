@@ -6,7 +6,7 @@ using namespace System;
 namespace GCMStore
 {
 
-	ref class Bowl abstract
+	ref class Barrel abstract
 	{
 
 	public: virtual property int Capacity;
@@ -51,12 +51,12 @@ namespace GCMStore
 	};
 
 
-	ref class MediumBowl : Bowl
+	ref class MediumBarrel : Barrel
 	{
 
 	public: property int Capacity { int get() override { return 100; } }
 
-	public: MediumBowl() { Capacity = 100; }
+	public: MediumBarrel() { Capacity = 100; }
 	public: String^ ToString() override
 	{
 		String^ str = "Средняя бочка:\t";
@@ -70,12 +70,12 @@ namespace GCMStore
 	};
 
 
-	ref class LargeBowl : Bowl
+	ref class LargeBarrel : Barrel
 	{
 
 	public: property int Capacity { int get() override { return 200; } }
 
-	public: LargeBowl() { Capacity = 200; }
+	public: LargeBarrel() { Capacity = 200; }
 	public: String^ ToString() override
 	{
 		String^ str = "Большая бочка:\t";
