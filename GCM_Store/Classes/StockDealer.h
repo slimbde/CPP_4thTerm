@@ -30,10 +30,15 @@ namespace GCMStore
 			order->SetId(++count);
 			orders->Enqueue(order);
 
+			double cost = 0.0;
 			status = gcnew Generic::List<String^>();
-			status->Add(String::Concat(String::Concat(DateTime::Now.ToShortTimeString(), "\tзарегистрирован заказ id: ", count)));
+			status->Add(String::Concat(String::Concat(DateTime::Now.ToShortTimeString(), " - зарегистрирован заказ id: ", count)));
 			for each (auto oil in order->Items)
-				status->Add(String::Concat(DateTime::Now.ToShortTimeString(), "\t", oil->ToString()));
+			{
+				cost += oil->Price * oil->Quantity;
+				status->Add(String::Concat(DateTime::Now.ToShortTimeString(), " - ", oil->ToString()));
+			}
+			status->Add(String::Concat("К оплате: ", cost, " р."));
 			status->Add("");
 
 			onOrderApplying(this, EventArgs::Empty);
@@ -92,7 +97,7 @@ namespace GCMStore
 				if (order->Complete)
 				{
 					packages->Add(package->Id, package);
-					status->Add(String::Concat(String::Concat(DateTime::Now.ToShortTimeString(), "\tзаказ id: ", package->Id, ": ", "готов к выдаче")));
+					status->Add(String::Concat(String::Concat(DateTime::Now.ToShortTimeString(), " - заказ id: ", package->Id, ": ", "готов к выдаче")));
 					status->Add("");
 
 					// clear error entries
@@ -107,7 +112,7 @@ namespace GCMStore
 					else
 						assembles[package->Id] = package;
 
-					auto message = String::Concat("не удалось собрать: ", order->GetRest());
+					auto message = String::Concat("не собрано: ", order->GetRest());
 
 					// write error
 					if (!errors->ContainsKey(order->Id))
@@ -115,7 +120,7 @@ namespace GCMStore
 					else
 						errors[order->Id] = message;
 
-					status->Add(String::Concat(String::Concat(DateTime::Now.ToShortTimeString(), "\tзаказ ", order->Id, ": ", errors[order->Id])));
+					status->Add(String::Concat(String::Concat(DateTime::Now.ToShortTimeString(), " - ", order->Id, ": ", errors[order->Id])));
 					status->Add("необходимо пополнить склад");
 					status->Add("");
 					orders->Enqueue(order); // put the order back in line
@@ -203,7 +208,7 @@ namespace GCMStore
 
 			status->Add("остатки на складе:");
 			for each (auto oil in oils)
-				status->Add(String::Concat(DateTime::Now.ToShortTimeString(), "\t", oil.Value->ToString()));
+				status->Add(String::Concat(DateTime::Now.ToShortTimeString(), " - ", oil.Value->ToString()));
 			status->Add("");
 		}
 	};

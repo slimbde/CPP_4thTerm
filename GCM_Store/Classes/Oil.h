@@ -33,7 +33,7 @@ namespace GCMStore
 
 		virtual String^ ToString() override
 		{
-			return String::Concat("масло Castrol:\t", quantity, " литров");
+			return String::Concat("масло Castrol: ", quantity, " литров >> ", Price, " р./литр");
 		}
 	};
 
@@ -48,7 +48,7 @@ namespace GCMStore
 
 		virtual String^ ToString() override
 		{
-			return String::Concat("масло Mobil:\t", quantity, " литров");
+			return String::Concat("масло Mobil: ", quantity, " литров >> ", Price, " р./литр");
 		}
 	};
 
@@ -63,7 +63,7 @@ namespace GCMStore
 
 		virtual String^ ToString() override
 		{
-			return String::Concat("масло Total:\t", quantity, " литров");
+			return String::Concat("масло Total: ", quantity, " литров >> ", Price, " р./литр");
 		}
 	};
 
@@ -78,7 +78,7 @@ namespace GCMStore
 
 		virtual String^ ToString() override
 		{
-			return String::Concat("масло Shell:\t", quantity, " литров");
+			return String::Concat("масло Shell: ", quantity, " литров >> ", Price, " р./литр");
 		}
 	};
 

@@ -19,8 +19,14 @@ namespace GCMStore
 	public: String^ ToString() override
 	{
 		String^ result = String::Concat("Заказ: ", id, "\n");
+		double price = 0.0;
+
 		for each (auto item in Items)
+		{
 			result += String::Concat(item, "\n");
+			price += item->Cost;
+		}
+		result += String::Concat("Стоимость: ", price, " у.е.");
 
 		return String::Concat(result, "\n");
 	}

@@ -31,7 +31,6 @@ namespace GCMStore
 	{
 		Items = other->Items;
 		id = other->id;
-		
 
 		BackColor = other->BackColor;
 		BorderStyle = other->BorderStyle;

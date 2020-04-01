@@ -10,8 +10,9 @@ namespace GCMStore
 	{
 
 	public: virtual property int Capacity;
-	public: property int FreeSpace { int get() { if (content == nullptr) return 0; return Capacity - content->Quantity; }  private: void set(int value) { } }
 	public:	virtual property Type^ ContentType { Type^ get() { return content->GetType(); }	protected: void set(Type^ value) { } }
+	public: property int FreeSpace { int get() { if (content == nullptr) return 0; return Capacity - content->Quantity; }  private: void set(int value) { } }
+	public: property double Cost { double get() { return content->Price * Capacity; } }
 
 	public: void PourWith(Oil^ oil)
 	{

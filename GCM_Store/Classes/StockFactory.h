@@ -13,14 +13,6 @@ namespace GCMStore
 
 	public: property List<Type^>^ OilType;
 
-	public: StockFactory()
-	{
-		OilType = gcnew List<Type^>();
-		OilType->Add(Castrol::typeid);
-		OilType->Add(Mobil::typeid);
-		OilType->Add(Total::typeid);
-		OilType->Add(Shell::typeid);
-	}
 	public: Generic::Stack<Barrel^>^ Create()
 	{
 		// случайным образом организованный склад

@@ -577,9 +577,10 @@ namespace GCMStore
 			this->Controls->Add(this->groupBox2);
 			this->Controls->Add(this->groupBox1);
 			this->FormBorderStyle = System::Windows::Forms::FormBorderStyle::FixedSingle;
+			this->Icon = (cli::safe_cast<System::Drawing::Icon^>(resources->GetObject(L"$this.Icon")));
 			this->MaximizeBox = false;
 			this->Name = L"Store";
-			this->Text = L"ÌÀÃÀÇÈÍ ÃÑÌ";
+			this->Text = L"Ïðîäàæà ÃÑÌ";
 			this->Load += gcnew System::EventHandler(this, &Store::Store_Load);
 			this->groupBox1->ResumeLayout(false);
 			this->gbTotal->ResumeLayout(false);
