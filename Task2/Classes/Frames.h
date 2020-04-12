@@ -3,6 +3,7 @@ using namespace System;
 using namespace System::Windows::Forms;
 using namespace System::Collections;
 using namespace System::Drawing;
+using namespace Resources;
 
 namespace Task2
 {

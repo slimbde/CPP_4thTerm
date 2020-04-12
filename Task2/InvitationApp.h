@@ -584,7 +584,7 @@ namespace Task2
 	{
 		try
 		{
-			auto db = File::ReadAllLines("dbPeople.txt");
+			auto db = File::ReadAllLines("db/dbPeople.txt");
 			people = gcnew People();
 
 			for each (auto personInfo in db)
