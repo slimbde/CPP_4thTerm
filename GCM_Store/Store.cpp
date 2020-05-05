@@ -12,16 +12,19 @@ Int32 main(array<System::String^>^ args)
 	Application::EnableVisualStyles();
 	Application::SetCompatibleTextRenderingDefault(false);
 
-	auto factory = gcnew StockFactory();
-	factory->OilType = gcnew List<Type^>();
-	factory->OilType->Add(Castrol::typeid);
-	factory->OilType->Add(Mobil::typeid);
-	factory->OilType->Add(Total::typeid);
-	factory->OilType->Add(Shell::typeid);
+	if (Process::GetProcessesByName("Продажа ГСМ")->Length == 1)
+	{
+		auto factory = gcnew StockFactory();
+		factory->OilType = gcnew List<Type^>();
+		factory->OilType->Add(Castrol::typeid);
+		factory->OilType->Add(Mobil::typeid);
+		factory->OilType->Add(Total::typeid);
+		factory->OilType->Add(Shell::typeid);
 
-	auto dealer = gcnew StockDealer(factory);
+		auto dealer = gcnew StockDealer(factory);
 
-	Application::Run(gcnew GCMStore::Store(dealer));
+		Application::Run(gcnew GCMStore::Store(dealer));
+	}
 
 	return 0;
 }

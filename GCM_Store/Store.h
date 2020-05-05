@@ -8,7 +8,6 @@ namespace GCMStore
 
 	using namespace System::ComponentModel;
 	using namespace System::Collections;
-	using namespace System::Data;
 	using namespace System;
 	using namespace System::Windows::Forms;
 
@@ -609,7 +608,7 @@ namespace GCMStore
 	//-------------------------------------------- ÂÑÏÎÌÎÃÀÒÅËÜÍÛÅ ÔÓÍÊÖÈÈ -------------------------------------	
 	private: void alterMessage(String^ text)
 	{
-		auto inv = gcnew Action<String^>(this, &Store::alterMessageInvoke);
+		auto inv = gcnew System::Action<String^>(this, &Store::alterMessageInvoke);
 		Invoke(inv, text);
 	}
 	private: void alterMessageInvoke(String^ text)
@@ -642,7 +641,7 @@ namespace GCMStore
 			if (order->Id == 0)
 				auto id = dealer->ApplyOrder(order);
 
-			auto markOrder = gcnew Action<String^>(this, &Store::markOrderInvoke);
+			auto markOrder = gcnew System::Action<String^>(this, &Store::markOrderInvoke);
 			Invoke(markOrder, Convert::ToString(order->Id));
 		}
 		catch (Exception^) { }
@@ -726,7 +725,7 @@ namespace GCMStore
 				if (orderOils->ContainsKey(oilType))
 					orderOils->Remove(oilType);
 
-			auto alterMsg = gcnew Action<String^>(this, &Store::alterMessage);
+			auto alterMsg = gcnew System::Action<String^>(this, &Store::alterMessage);
 			alterMsg->BeginInvoke("ÏÎÑËÅ ÎÊÎÍ×ÀÍÈß ÔÎĞÌÈĞÎÂÀÍÈß ÇÀÊÀÇÀ ÍÀÆÌÈÒÅ ÍÀ ÑÒĞÅËÊÓ ÄËß ÏÎËÓ×ÅÍÈß ÆÅÒÎÍÀ", nullptr, nullptr);
 
 			blinkBtn = bOrder;
@@ -751,7 +750,7 @@ namespace GCMStore
 		bRegister->BackColor = Drawing::SystemColors::ControlLight;
 		blinkBtn = bGet;
 
-		auto alterMessage = gcnew Action<String^>(this, &Store::alterMessage);
+		auto alterMessage = gcnew System::Action<String^>(this, &Store::alterMessage);
 		alterMessage->BeginInvoke("ÒÅÏÅĞÜ ÂÛ ÌÎÆÅÒÅ ÏÎÏĞÎÁÎÂÀÒÜ ÏÎËÓ×ÈÒÜ ÇÀÊÀÇ ÏÎ ÆÅÒÎÍÓ", nullptr, nullptr);
 	}
 	private: void getOrderCallback(IAsyncResult^ result)
@@ -823,7 +822,7 @@ namespace GCMStore
 		{
 			table[table->Count - 1] = String::Concat("ñáîğêà çàêàçîâ.. ", i, "%");
 
-			auto alterPercent = gcnew Action<array<String^>^>(this, &Store::percentTableInvoke);
+			auto alterPercent = gcnew System::Action<array<String^>^>(this, &Store::percentTableInvoke);
 			Invoke(alterPercent, gcnew array<Object^>{table->ToArray()});
 
 			System::Threading::Thread::Sleep(50);
@@ -927,7 +926,7 @@ namespace GCMStore
 				this->order->MouseDown += gcnew System::Windows::Forms::MouseEventHandler(this, &Store::order_MouseDown);
 				this->pOrder->Controls->Add(this->order);
 
-				auto pullOrderOut = gcnew Action<IAsyncResult^>(this, &Store::pullOrder);
+				auto pullOrderOut = gcnew System::Action<IAsyncResult^>(this, &Store::pullOrder);
 				pullOrderOut->BeginInvoke(nullptr, nullptr, nullptr);
 
 				for each (auto oil in orderOils->Values)
@@ -936,7 +935,7 @@ namespace GCMStore
 				orderOils->Clear();	// î÷èùàåì ñëîâàğü ìàñåë â çàêàçå ïîñëå ôîğìèğîâàíèÿ çàêàçà
 			}
 
-			auto alterMessage = gcnew Action<String^>(this, &Store::alterMessage);
+			auto alterMessage = gcnew System::Action<String^>(this, &Store::alterMessage);
 			alterMessage->BeginInvoke("ÒÅÏÅĞÜ ÏÅĞÅÒÀÙÈÒÅ ÆÅÒÎÍ ÍÀ ÏÎËÅ ĞÅÃÈÑÒĞÀÖÈÈ È ÇÀĞÅÃÈÑÒĞÈĞÓÉÒÅ ÇÀÊÀÇ", nullptr, nullptr);
 
 			blinkBtn->BackColor = Drawing::SystemColors::ControlLight;
@@ -951,7 +950,7 @@ namespace GCMStore
 		{
 			if (order == nullptr)
 			{
-				auto alterMessage = gcnew Action<String^>(this, &Store::alterMessage);
+				auto alterMessage = gcnew System::Action<String^>(this, &Store::alterMessage);
 				alterMessage->BeginInvoke("ÍÀ×ÍÈÒÅ Ñ ÔÎĞÌÈĞÎÂÀÍÈß ÇÀÊÀÇÀ", nullptr, nullptr);
 			}
 		}
@@ -981,7 +980,7 @@ namespace GCMStore
 					bRegister->BackColor = Drawing::SystemColors::ControlLight;
 					blinkBtn = bSafe;
 
-					auto alterMessage = gcnew Action<String^>(this, &Store::alterMessage);
+					auto alterMessage = gcnew System::Action<String^>(this, &Store::alterMessage);
 					alterMessage->BeginInvoke("ÒÅÏÅĞÜ ÂÛ ÌÎÆÅÒÅ ÑÎÕĞÀÍÈÒÜ ÆÅÒÎÍ È ÑÄÅËÀÒÜ ÅÙÅ ÎÄÈÍ ÇÀÊÀÇ ËÈÁÎ ÄÎÆÄÀÒÜÑß ÃÎÒÎÂÍÎÑÒÈ È ÏÎËÓ×ÈÒÜ ÇÀÊÀÇ", nullptr, nullptr);
 				}
 				else
@@ -1056,7 +1055,7 @@ namespace GCMStore
 				order->Parent = pSafe;
 				order->MouseDown += gcnew MouseEventHandler(this, &Store::order_MouseDown);
 
-				auto pull = gcnew Action<IAsyncResult^>(this, &Store::pullOrder);
+				auto pull = gcnew System::Action<IAsyncResult^>(this, &Store::pullOrder);
 				auto callback = gcnew AsyncCallback(this, &Store::retrieveTokenCallback);
 				pull->BeginInvoke(nullptr, callback, nullptr);
 			}
